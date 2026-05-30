@@ -61,7 +61,8 @@ CREATE TABLE raw_kafka (
     supplier_phone STRING,
     supplier_address STRING,
     supplier_city STRING,
-    supplier_country STRING
+    supplier_country STRING,
+    pet_id STRING
 ) WITH (
     'connector' = 'kafka',
     'topic' = 'raw_data_topic',
@@ -91,6 +92,18 @@ CREATE TABLE dim_customer (
     postal_code STRING,
     PRIMARY KEY (customer_id) NOT ENFORCED
 ) WITH ({jdbc_sink_options}, 'table-name' = 'dim_customer')
+""")
+
+t_env.execute_sql(f"""
+CREATE TABLE dim_pet (
+    pet_id STRING,
+    pet_type STRING,
+    pet_category STRING,
+    pet_breed STRING,
+    pet_name STRING,
+    customer_id INT,
+    PRIMARY KEY (pet_id) NOT ENFORCED
+) WITH ({jdbc_sink_options}, 'table-name' = 'dim_pet')
 """)
 
 t_env.execute_sql(f"""
@@ -172,6 +185,13 @@ statement_set.add_insert_sql("""
 INSERT INTO dim_customer
 SELECT CAST(sale_customer_id AS INT), customer_first_name, customer_last_name, CAST(customer_age AS INT), customer_email, customer_country, customer_postal_code
 FROM raw_kafka WHERE sale_customer_id IS NOT NULL AND sale_customer_id <> ''
+""")
+
+statement_set.add_insert_sql("""
+INSERT INTO dim_pet
+SELECT pet_id, customer_pet_type, pet_category, customer_pet_breed, customer_pet_name, CAST(sale_customer_id AS INT)
+FROM raw_kafka WHERE pet_id IS NOT NULL AND pet_id <> ''
+  AND sale_customer_id IS NOT NULL AND sale_customer_id <> ''
 """)
 
 statement_set.add_insert_sql("""

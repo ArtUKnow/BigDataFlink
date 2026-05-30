@@ -68,3 +68,20 @@ services:
         FLINK_PROPERTIES=
         jobmanager.rpc.address: jobmanager
         taskmanager.numberOfTaskSlots: 2
+
+  producer:
+    image: python:3.10-slim
+    depends_on:
+      - kafka
+    volumes:
+      - .:/app
+    working_dir: /app
+    environment:
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
+    command: >
+      bash -c "
+      pip install --no-cache-dir kafka-python==2.0.2 &&
+      echo 'Waiting for Kafka to start...' &&
+      sleep 15 &&
+      python kafka_producer.py
+      "
